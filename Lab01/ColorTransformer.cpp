@@ -28,7 +28,7 @@ int ColorTransformer::ChangeBrighness(const Mat& sourceImage, Mat& destinationIm
 			pDestinationRow[2] = R_brightness;
 		}
 	}
-    return 0;
+	return 0;
 }
 
 int ColorTransformer::ChangeContrast(const Mat& sourceImage, Mat& destinationImage, float c)
@@ -68,10 +68,113 @@ int ColorTransformer::ChangeContrast(const Mat& sourceImage, Mat& destinationIma
 int ColorTransformer::CalcHistogram(const Mat& sourceImage, Mat& histMatrix)
 {
 	if (sourceImage.data == NULL)
-		return 1;
+		return 0;
 	int width = sourceImage.cols, height = sourceImage.rows;
 	int sourceChannels = sourceImage.channels();
-	return 0;
+	histMatrix = Mat::zeros(Size(256, sourceChannels), CV_32S); // Tạo 1 matrix với dữ liệu mặc định là 0
+	for (int y = 0; y < height; y++)
+	{
+		uchar* pSourceRow = (uchar*)(sourceImage.ptr<uchar>(y));
+		for (int x = 0; x < width; x++, pSourceRow += sourceChannels)
+		{
+			if (sourceChannels == 3) // Ảnh màu
+			{
+				// Lấy thông số màu RGB của từng pixel
+				int binIndex_B = (int)(pSourceRow[0]);
+				int binIndex_G = (int)(pSourceRow[1]);
+				int binIndex_R = (int)(pSourceRow[2]);
+				// Lấy thông số màu nhận được từ pixel làm index cho matrix histogram
+				histMatrix.at<int>(0, binIndex_B) += 1; // Blue histogram
+				histMatrix.at<int>(1, binIndex_G) += 1; // Green histogram
+				histMatrix.at<int>(2, binIndex_R) += 1; // Red histogram
+			}
+			if (sourceChannels == 1) // Ảnh xám
+			{
+				int binIndex = (int)(pSourceRow[0]);
+				histMatrix.at<int>(0, binIndex) += 1;
+			}
+		}
+	}
+	/*
+	for (int y = 0; y < histMatrix.rows; y++)
+	{
+		for (int x = 0; x < histMatrix.cols; x++)
+		{
+			std::cout << histMatrix.at<int>(y, x) << " ";
+		}
+		std::cout << std::endl;
+	}
+	*/
+	return 1;
+}
+
+int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destinationImage)
+{
+	if (sourceImage.data == NULL)
+		return 0;
+	int width = sourceImage.cols, height = sourceImage.rows;
+	int sourceChannels = sourceImage.channels();
+	Mat histMatrix;
+	CalcHistogram(sourceImage, histMatrix); // Histogram của hình vào biến histMatrix
+	Mat tMatrix = Mat::zeros(Size(256, sourceChannels), CV_32S);
+
+	/*
+	Tính ma trận T
+	T[0]=H[0]
+	T[p]=T[p-1]+H[p]
+	*/
+	for (int channels = 0; channels < sourceChannels; channels++)
+	{
+		tMatrix.at<int>(channels, 0) = histMatrix.at<int>(channels, 0);
+		for (int i = 1; i < 256; i++)
+		{
+			tMatrix.at<int>(channels, i) = tMatrix.at<int>(channels, i - 1) + histMatrix.at<int>(channels, i);
+		}
+	}
+	/*
+	Chuẩn hóa T về đoạn [0,255]
+	T[p]=round(((nG-1)/NM)*T[p])
+	*/
+	for (int channels = 0; channels < sourceChannels; channels++)
+	{
+		for (int i = 0; i < 256; i++)
+		{
+			tMatrix.at<int>(channels, i) = cvRound((255.0 / ((double)width * (double)height)) * (double)(tMatrix.at<int>(channels, i)));
+		}
+	}
+	destinationImage = Mat(Size(width, height), CV_8UC3);
+	if (sourceChannels == 3)
+		destinationImage = Mat(Size(width, height), CV_8UC3); // Ảnh màu
+	if (sourceChannels == 1)
+		destinationImage = Mat(Size(width, height), CV_8UC1); // Ảnh xám
+	int destinationChannels = destinationImage.channels();
+	/*
+	Tạo ảnh kết quả:
+	g(x,y)=T[f(x,y)]
+	*/
+	for (int y = 0; y < height; y++)
+	{
+		uchar* pSourceRow = (uchar*)(sourceImage.ptr<uchar>(y));
+		uchar* pDestinationRow = (uchar*)(destinationImage.ptr<uchar>(y));
+		for (int x = 0; x < width; x++, pSourceRow += sourceChannels, pDestinationRow += destinationChannels)
+		{
+			if (sourceChannels == 3)
+			{
+				uchar B = pSourceRow[0];
+				uchar G = pSourceRow[1];
+				uchar R = pSourceRow[2];
+				pDestinationRow[0] = (uchar)tMatrix.at<int>(0, (int)B);
+				pDestinationRow[1] = (uchar)tMatrix.at<int>(1, (int)G);
+				pDestinationRow[2] = (uchar)tMatrix.at<int>(2, (int)R);
+			}
+			if (sourceChannels == 1)
+			{
+				uchar gray = pSourceRow[0];
+				pDestinationRow[0] = (uchar)tMatrix.at<int>(0, (int)gray);
+			}
+		}
+	}
+	return 1;
 }
 
 ColorTransformer::ColorTransformer()

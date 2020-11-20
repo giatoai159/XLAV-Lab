@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
         std::string commandArguments = argv[3];
         if (transform.ChangeBrighness(inputImage, outputImage, std::stoi(commandArguments)))
         {
-            std::cout << "Cannot convert your image from HSV to RGB.";
+            std::cout << "Cannot set the brightness.";
             return 0;
         }
     }
@@ -63,7 +63,31 @@ int main(int argc, char* argv[])
         std::string commandArguments = argv[3];
         if (transform.ChangeContrast(inputImage, outputImage, std::stof(commandArguments)))
         {
-            std::cout << "Cannot convert your image from HSV to RGB.";
+            std::cout << "Cannot set the contrast.";
+            return 0;
+        }
+    }
+    else if (command == "--hist")
+    {
+        if (transform.CalcHistogram(inputImage, outputImage))
+        {
+            for (int y = 0; y < outputImage.rows; y++)
+            {
+                for (int x = 0; x < outputImage.cols; x++)
+                {
+                    std::cout << outputImage.at<int>(y, x) << " ";
+                }
+                std::cout << std::endl;
+            }
+            return 0;
+        }
+        else return 0;
+    }
+    else if (command == "--equalhist")
+    {
+        if (!transform.HistogramEqualization(inputImage, outputImage))
+        {
+            std::cout << "Cannot equalize the image.";
             return 0;
         }
     }
