@@ -25,10 +25,9 @@ public:
 	Hàm trả về:
 		1: Nếu thành công thì trả về ảnh kết quả (ảnh gốc vẫn giữ nguyên giá trị)
 		0: Nếu không tạo được ảnh kết quả hoặc ảnh input không tồn tại
-	*/	
+	*/
 	int ChangeContrast(const Mat& sourceImage, Mat& destinationImage, float c);
-	
-	
+
 	/*
 	Hàm tính lược đồ màu tổng quát cho ảnh bất kỳ
 	Tham so :
@@ -39,7 +38,7 @@ public:
 		0: Nếu không tính được histogram hoặc ảnh input không tồn tại
 	*/
 	int CalcHistogram(const Mat& sourceImage, Mat& histMatrix);
-	
+
 	/*
 	Hàm cân bằng lược đồ màu tổng quát cho ảnh bất kỳ
 	Tham so :
@@ -50,21 +49,18 @@ public:
 		0: Nếu không vẽ được histogram
 	*/
 	int HistogramEqualization(const Mat& sourceImage, Mat& destinationImage);
-	
 
-
-		/*
-	Hàm cân bằng lược đồ màu tổng quát cho ảnh bất kỳ
-	Tham so :
-		histMatrix : ma trận histogram đã tính được
-		histImage : ảnh histogram được vẽ
-	Hàm trả về:
-		1: Nếu thành công vẽ được histogram
-		0: Nếu không vẽ được histogram
-	*/
+	/*
+Hàm cân bằng lược đồ màu tổng quát cho ảnh bất kỳ
+Tham so :
+	histMatrix : ma trận histogram đã tính được
+	histImage : ảnh histogram được vẽ
+Hàm trả về:
+	1: Nếu thành công vẽ được histogram
+	0: Nếu không vẽ được histogram
+*/
 	int DrawHistogram(const Mat& histMatrix, Mat& histImage);
 
-	
 	/*
 	Hàm so sánh hai ảnh
 	Tham so :
@@ -74,9 +70,7 @@ public:
 		độ đo sự tương đồng giữa hai ảnh
 	*/
 	float CompareImage(const Mat& image1, Mat& image2);
-	
-	
+
 	ColorTransformer();
 	~ColorTransformer();
 };
-
