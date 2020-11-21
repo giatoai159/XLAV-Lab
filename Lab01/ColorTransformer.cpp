@@ -71,7 +71,18 @@ int ColorTransformer::CalcHistogram(const Mat& sourceImage, Mat& histMatrix)
 		return 0;
 	int width = sourceImage.cols, height = sourceImage.rows;
 	int sourceChannels = sourceImage.channels();
-	histMatrix = Mat::zeros(Size(256, sourceChannels), CV_32S); // Tạo 1 matrix với dữ liệu mặc định là 0
+	// Tạo 1 matrix với dữ liệu mặc định là 0
+	histMatrix = Mat::zeros(Size(256, sourceChannels), CV_32S); 
+	// Pointer trỏ đến từng dòng của ma trận
+	int* pHistRowB = (int*)(histMatrix.ptr<int>(0));
+	int* pHistRowG = NULL;
+	int* pHistRowR = NULL;
+	if (sourceChannels == 3) // Ảnh màu
+	{
+		pHistRowG = (int*)(histMatrix.ptr<int>(1));
+		pHistRowR = (int*)(histMatrix.ptr<int>(2));
+	}
+	
 	for (int y = 0; y < height; y++)
 	{
 		uchar* pSourceRow = (uchar*)(sourceImage.ptr<uchar>(y));
@@ -84,14 +95,14 @@ int ColorTransformer::CalcHistogram(const Mat& sourceImage, Mat& histMatrix)
 				int binIndex_G = (int)(pSourceRow[1]);
 				int binIndex_R = (int)(pSourceRow[2]);
 				// Lấy thông số màu nhận được từ pixel làm index cho matrix histogram
-				histMatrix.at<int>(0, binIndex_B) += 1; // Blue histogram
-				histMatrix.at<int>(1, binIndex_G) += 1; // Green histogram
-				histMatrix.at<int>(2, binIndex_R) += 1; // Red histogram
+				pHistRowB[binIndex_B] += 1;
+				pHistRowG[binIndex_G] += 1;
+				pHistRowR[binIndex_R] += 1;
 			}
-			if (sourceChannels == 1) // Ảnh xám
+			else // Ảnh xám
 			{
 				int binIndex = (int)(pSourceRow[0]);
-				histMatrix.at<int>(0, binIndex) += 1;
+				pHistRowB[binIndex]++;
 			}
 		}
 	}
@@ -116,36 +127,61 @@ int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destina
 	int sourceChannels = sourceImage.channels();
 	Mat histMatrix;
 	CalcHistogram(sourceImage, histMatrix); // Histogram của hình vào biến histMatrix
+	int* pHistRowB = (int*)(histMatrix.ptr<int>(0));
+	int* pHistRowG = NULL;
+	int* pHistRowR = NULL;
+	if (sourceChannels == 3)
+	{
+		pHistRowG = (int*)(histMatrix.ptr<int>(1));
+		pHistRowR = (int*)(histMatrix.ptr<int>(2));
+	}
 	Mat tMatrix = Mat::zeros(Size(256, sourceChannels), CV_32S);
-
+	int* pTMatRowB = (int*)(tMatrix.ptr<int>(0));
+	int* pTMatRowG = NULL;
+	int* pTMatRowR = NULL;
+	if (sourceChannels == 3)
+	{
+		pTMatRowG = (int*)(tMatrix.ptr<int>(1));
+		pTMatRowR = (int*)(tMatrix.ptr<int>(2));
+	}
 	/*
 	Tính ma trận T
 	T[0]=H[0]
 	T[p]=T[p-1]+H[p]
 	*/
-	for (int channels = 0; channels < sourceChannels; channels++)
+	pTMatRowB[0] = pHistRowB[0];
+	if (sourceChannels == 3)
 	{
-		tMatrix.at<int>(channels, 0) = histMatrix.at<int>(channels, 0);
-		for (int i = 1; i < 256; i++)
+		pTMatRowG[0] = pHistRowG[0];
+		pTMatRowR[0] = pHistRowR[0];
+	}
+
+	for (int i = 1; i < 256; i++)
+	{
+		pTMatRowB[i] = pTMatRowB[i - 1] + pHistRowB[i];
+		if (sourceChannels == 3)
 		{
-			tMatrix.at<int>(channels, i) = tMatrix.at<int>(channels, i - 1) + histMatrix.at<int>(channels, i);
+			pTMatRowG[i] = pTMatRowG[i - 1] + pHistRowG[i];
+			pTMatRowR[i] = pTMatRowR[i - 1] + pHistRowR[i];
 		}
 	}
 	/*
 	Chuẩn hóa T về đoạn [0,255]
 	T[p]=round(((nG-1)/NM)*T[p])
 	*/
-	for (int channels = 0; channels < sourceChannels; channels++)
+	for (int i = 0; i < 256; i++)
 	{
-		for (int i = 0; i < 256; i++)
+		pTMatRowB[i] = cvRound((255.0 / ((double)width * (double)height)) * (double)(pTMatRowB[i]));
+		if (sourceChannels == 3)
 		{
-			tMatrix.at<int>(channels, i) = cvRound((255.0 / ((double)width * (double)height)) * (double)(tMatrix.at<int>(channels, i)));
+			pTMatRowG[i] = cvRound((255.0 / ((double)width * (double)height)) * (double)(pTMatRowG[i]));
+			pTMatRowR[i] = cvRound((255.0 / ((double)width * (double)height)) * (double)(pTMatRowR[i]));
 		}
 	}
 	destinationImage = Mat(Size(width, height), CV_8UC3);
 	if (sourceChannels == 3)
 		destinationImage = Mat(Size(width, height), CV_8UC3); // Ảnh màu
-	if (sourceChannels == 1)
+	else
 		destinationImage = Mat(Size(width, height), CV_8UC1); // Ảnh xám
 	int destinationChannels = destinationImage.channels();
 	/*
@@ -163,14 +199,14 @@ int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destina
 				uchar B = pSourceRow[0];
 				uchar G = pSourceRow[1];
 				uchar R = pSourceRow[2];
-				pDestinationRow[0] = (uchar)tMatrix.at<int>(0, (int)B);
-				pDestinationRow[1] = (uchar)tMatrix.at<int>(1, (int)G);
-				pDestinationRow[2] = (uchar)tMatrix.at<int>(2, (int)R);
+				pDestinationRow[0] = (uchar)pTMatRowB[(int)B];
+				pDestinationRow[1] = (uchar)pTMatRowG[(int)G];
+				pDestinationRow[2] = (uchar)pTMatRowR[(int)R];
 			}
-			if (sourceChannels == 1)
+			else
 			{
 				uchar gray = pSourceRow[0];
-				pDestinationRow[0] = (uchar)tMatrix.at<int>(0, (int)gray);
+				pDestinationRow[0] = (uchar)pTMatRowB[(int)gray];
 			}
 		}
 	}

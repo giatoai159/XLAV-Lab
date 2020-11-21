@@ -71,17 +71,39 @@ int main(int argc, char* argv[])
     {
         if (transform.CalcHistogram(inputImage, outputImage))
         {
-            for (int y = 0; y < outputImage.rows; y++)
+            if (inputImage.channels() == 3)
             {
+                std::cout << "~~~Red histogram~~~" << std::endl;
                 for (int x = 0; x < outputImage.cols; x++)
                 {
-                    std::cout << outputImage.at<int>(y, x) << " ";
+                    std::cout << outputImage.at<int>(2, x) << " ";
                 }
-                std::cout << std::endl;
+                std::cout << std::endl << "~~~Green histogram~~~" << std::endl;
+                for (int x = 0; x < outputImage.cols; x++)
+                {
+                    std::cout << outputImage.at<int>(1, x) << " ";
+                }
+                std::cout << std::endl << "~~~Blue histogram~~~" << std::endl;
+                for (int x = 0; x < outputImage.cols; x++)
+                {
+                    std::cout << outputImage.at<int>(0, x) << " ";
+                }
+            }
+            else
+            {
+                std::cout << "~~~Grayscale histogram~~~" << std::endl;
+                for (int x = 0; x < outputImage.cols; x++)
+                {
+                    std::cout << outputImage.at<int>(0, x) << " ";
+                }
             }
             return 0;
         }
-        else return 0;
+        else
+        {
+            std::cout << "Cannot calculate this image's histogram.";
+            return 0;
+        }
     }
     else if (command == "--equalhist")
     {
