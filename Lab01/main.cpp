@@ -113,6 +113,55 @@ int main(int argc, char* argv[])
             return 0;
         }
     }
+    else if (command == "--drawhist")
+    {
+        Mat histMatrix;
+        if (transform.CalcHistogram(inputImage, histMatrix))
+        {
+            if (!transform.DrawHistogram(histMatrix, outputImage))
+            {
+                std::cout << "Cannot draw this image's histogram.";
+                return 0;
+            }
+        }
+        else
+        {
+            std::cout << "Cannot calculate this image's histogram.";
+            return 0;
+        }
+    }
+    /*
+    else if (command == "--test")
+    {
+        Mat iMat;
+        Mat histMatrix;
+        if (transform.CalcHistogram(inputImage, iMat))
+        {
+            normalize_hist(iMat, histMatrix, 0, 400);
+            std::cout << "~~~Red histogram~~~" << std::endl;
+            for (int x = 0; x < histMatrix.cols; x++)
+            {
+                std::cout << histMatrix.at<int>(2, x) << " ";
+            }
+            std::cout << std::endl << "~~~Green histogram~~~" << std::endl;
+            for (int x = 0; x < histMatrix.cols; x++)
+            {
+                std::cout << histMatrix.at<int>(1, x) << " ";
+            }
+            std::cout << std::endl << "~~~Blue histogram~~~" << std::endl;
+            for (int x = 0; x < histMatrix.cols; x++)
+            {
+                std::cout << histMatrix.at<int>(0, x) << " ";
+            }
+            return 0;
+        }
+        else
+        {
+            std::cout << "Cannot calculate this image's histogram.";
+            return 0;
+        }
+    }
+    */
     else
     {
         std::cout << "This command doesn't exist.";

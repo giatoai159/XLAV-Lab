@@ -8,8 +8,9 @@ int ColorTransformer::ChangeBrighness(const Mat& sourceImage, Mat& destinationIm
 	int sourceChannels = sourceImage.channels();
 	destinationImage = Mat(Size(width, height), CV_8UC3);
 	int destinationChannels = destinationImage.channels();
-	// Convert short number range to 1->2 number range
+	// Range của b min là -10
 	if (b < -10) b = -10; // Tối quá bị flip màu
+	// Convert short number range to 1->2 number range
 	float value = (b / 10.0f) + 1.0f;
 	for (int y = 0; y < height; y++)
 	{
@@ -45,6 +46,7 @@ int ColorTransformer::ChangeContrast(const Mat& sourceImage, Mat& destinationIma
 		uchar* pDestinationRow = (uchar*)(destinationImage.ptr<uchar>(y));
 		for (int x = 0; x < width; x++, pSourceRow += sourceChannels, pDestinationRow += destinationChannels)
 		{
+			// Contrast formula
 			float B = pSourceRow[0] / 255.0f;
 			float G = pSourceRow[1] / 255.0f;
 			float R = pSourceRow[2] / 255.0f;
@@ -208,6 +210,43 @@ int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destina
 				uchar gray = pSourceRow[0];
 				pDestinationRow[0] = (uchar)pTMatRowB[(int)gray];
 			}
+		}
+	}
+	return 1;
+}
+
+int ColorTransformer::DrawHistogram(const Mat& histMatrix, Mat& histImage)
+{
+	if (histMatrix.data == NULL)
+		return 0;
+	int binWidth = 5; // Khoảng cách giữa các bin màu
+	int histWidth = binWidth * 255, histHeight = 800, channels = histMatrix.rows;
+	Mat outputHist = Mat(Size(histMatrix.cols, channels), CV_32S);
+	histImage = Mat(histHeight + 20, histWidth, CV_8UC3, Scalar(255, 255, 255)); // Tạo hình output, height + 20 để dư phần trên một vài pixel
+	normalize_hist(histMatrix, outputHist, 0, histHeight); // Normalize histogram input về độ cao max của hình
+	// Các pointer trỏ đến các dòng của histogram
+	int* poHistRowB = (int*)(outputHist.ptr<int>(0));
+	int* poHistRowG = NULL;
+	int* poHistRowR = NULL;
+	if (channels == 3) // Ảnh màu
+	{
+		poHistRowG = (int*)(outputHist.ptr<int>(1));
+		poHistRowR = (int*)(outputHist.ptr<int>(2));
+	}
+	for (int i = 1; i < histMatrix.cols; i++) // Vẽ các line histogram lên hình
+	{
+		/* Vẽ từ điểm (i-1, số bin màu i-1) đến (i, số bin màu i), vì OpenCV vẽ từ trên xuống nên phải trừ độ cao của hình để vẽ từ dưới lên (lật ngược hình)
+		* Độ dày line: 2
+		* Line_AA: line vẽ có khử răng cưa
+		*/
+		line(histImage, Point(binWidth * (i - 1), histHeight + 20 - poHistRowB[i - 1]),
+			Point(binWidth * (i), histHeight + 20 - poHistRowB[i]), Scalar(255, 0, 0), 2, LINE_AA); // Vẽ histogram blue
+		if (channels == 3) // Ảnh màu
+		{
+			line(histImage, Point(binWidth * (i - 1), histHeight + 20 - poHistRowG[i - 1]),
+				Point(binWidth * (i), histHeight + 20 - poHistRowG[i]), Scalar(0, 255, 0), 2, LINE_AA); // Vẽ histogram green
+			line(histImage, Point(binWidth * (i - 1), histHeight + 20 - poHistRowR[i - 1]),
+				Point(binWidth * (i), histHeight + 20 - poHistRowR[i]), Scalar(0, 0, 255), 2, LINE_AA); // Vẽ histogram red
 		}
 	}
 	return 1;
