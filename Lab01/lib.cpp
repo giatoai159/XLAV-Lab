@@ -1,6 +1,6 @@
 ﻿#include "lib.h"
 
-int normalize_num(int oldValue, int oldMin, int oldMax, int newMin, int newMax)
+double normalize_num(double oldValue, double oldMin, double oldMax, double newMin, double newMax)
 {
 	if (oldMin == oldMax)
 	{
@@ -12,8 +12,8 @@ int normalize_num(int oldValue, int oldMin, int oldMax, int newMin, int newMax)
 		std::cout << "New range is zero.";
 		return 0;
 	}
-	int oldRange = oldMax - oldMin, newRange = newMax - newMin;
-	int newValue = cvRound((double)((((oldValue - oldMin) * newRange) / oldRange) + (double)newMin));
+	double oldRange = oldMax - oldMin, newRange = newMax - newMin;
+	double newValue = (((oldValue - oldMin) * newRange) / oldRange) + (double)newMin;
 	return newValue;
 }
 
@@ -59,11 +59,11 @@ void normalize_hist(const Mat& inputHist, Mat& outputHist, int min, int max)
 	// Xét từng phần tử của inputHist, normalize vào range của min, max rồi gán vào outputHist
 	for (int i = 0; i < 256; i++)
 	{
-		poHistRowB[i] = normalize_num(piHistRowB[i], 0, maxB, min, max);
+		poHistRowB[i] = cvRound(normalize_num(piHistRowB[i], 0, maxB, min, max));
 		if (inputHist.rows == 3) // Ảnh màu
 		{
-			poHistRowG[i] = normalize_num(piHistRowG[i], 0, maxG, min, max);
-			poHistRowR[i] = normalize_num(piHistRowR[i], 0, maxR, min, max);
+			poHistRowG[i] = cvRound(normalize_num(piHistRowG[i], 0, maxG, min, max));
+			poHistRowR[i] = cvRound(normalize_num(piHistRowR[i], 0, maxR, min, max));
 		}
 	}
 }

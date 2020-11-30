@@ -252,6 +252,59 @@ int ColorTransformer::DrawHistogram(const Mat& histMatrix, Mat& histImage)
 	return 1;
 }
 
+float ColorTransformer::CompareImage(const Mat& image1, Mat& image2)
+{
+	if (image1.data == NULL || image2.data == NULL)
+		return NULL;
+	int width1 = image1.cols, height1 = image1.rows, channels1 = image1.channels();
+	int width2 = image2.cols, height2 = image2.rows, channels2 = image2.channels();
+	if (channels1 != channels2)
+	{
+		std::cout << "Cannot compare a colored image with a grayscale image.";
+		return NULL;
+	}
+	Mat _image1Hist, _image2Hist; 
+	Mat image1Hist, image2Hist;
+	CalcHistogram(image1, _image1Hist);
+	normalize_hist(_image1Hist, image1Hist, 0, 500);
+	int* p1HistRowB = (int*)(image1Hist.ptr<int>(0));
+	int* p1HistRowG = NULL;
+	int* p1HistRowR = NULL;
+	
+	if (channels1 == 3) // Ảnh màu
+	{
+		p1HistRowG = (int*)(image1Hist.ptr<int>(1));
+		p1HistRowR = (int*)(image1Hist.ptr<int>(2));
+	}
+	CalcHistogram(image2, _image2Hist);
+	normalize_hist(_image2Hist, image2Hist, 0, 500);
+	int* p2HistRowB = (int*)(image2Hist.ptr<int>(0));
+	int* p2HistRowG = NULL;
+	int* p2HistRowR = NULL;
+	if (channels1 == 3) // Ảnh màu
+	{
+		p2HistRowG = (int*)(image2Hist.ptr<int>(1));
+		p2HistRowR = (int*)(image2Hist.ptr<int>(2));
+	}
+	float resultB = 0.0f;
+	float resultG = 0.0f;
+	float resultR = 0.0f;
+	// Euclid Distance
+	for (int i = 0; i < 256; i++)
+	{
+		resultB += (float)pow(p1HistRowB[i] - p2HistRowB[i], 2);
+		if (channels1 == 3)
+		{
+			resultG += (float)pow(p1HistRowG[i] - p2HistRowG[i], 2);
+			resultR += (float)pow(p1HistRowR[i] - p2HistRowR[i], 2);
+		}
+	}
+	resultB = sqrt(resultB);
+	resultG = sqrt(resultG);
+	resultR = sqrt(resultR);
+	return (resultB + resultG + resultR) / (3*500);
+}
+
 ColorTransformer::ColorTransformer()
 {
 }

@@ -130,6 +130,13 @@ int main(int argc, char* argv[])
             return 0;
         }
     }
+    else if (command == "--compare")
+    {
+        std::string _inputImage2 = argv[3];
+        Mat inputImage2 = imread(_inputImage2, IMREAD_COLOR);
+        std::cout << "Su khac biet (so cang lon thi cang khac): " << transform.CompareImage(inputImage, inputImage2);
+        return 0;
+    }
     /*
     else if (command == "--test")
     {
